@@ -40,13 +40,17 @@ def helper(equation):
     return 0
 
 
-def get_solvable_sum(equations):
+def get_solvable_values(equations):
     with Pool(processes=os.cpu_count()) as pool:
         results = pool.map(helper, equations)
-    print(results)
-    return sum(results)
+
+    return results
+
+
+def get_solvable_sum(equations):
+    return sum(get_solvable_values(equations))
 
 
 if __name__ == "__main__":
-    lines = parse_input()
+    lines = parse_input("input.txt")
     print(get_solvable_sum(lines))
