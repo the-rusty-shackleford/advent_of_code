@@ -1,4 +1,6 @@
 import os
+from functools import partial
+from operator import add, mul, concat
 from multiprocessing import Pool
 
 
@@ -12,45 +14,50 @@ def parse_input(filename="./input.txt"):
     return data
 
 
-def is_solvable(value, operands):
-    n = len(operands)
+def is_solvable(value, operands, operators, values=None):
+    new_operands = operands[:]
+    if values is None:
+        first = new_operands.pop(0)
+        second = new_operands.pop(0)
+        values = [op(first, second) for op in operators]
 
-    dp = [[set() for _ in range(n)] for _ in range(n)]
+    if not new_operands:
+        return value in values
 
-    for i in range(n):
-        dp[i][i].add(operands[i])
+    new_values = []
+    second = new_operands.pop(0)
+    while values:
+        first = values.pop(0)
+        new_values.extend([op(first, second) for op in operators])
 
-    for length in range(2, n+1):
-        for i in range(n - length + 1):
-            j = i + length - 1
-            for k in range(i, j):
-                for left_val in dp[i][k]:
-                    for right_val in dp[k+1][j]:
-                        dp[i][j].add(left_val + right_val)
-                        dp[i][j].add(left_val * right_val)
-
-    return value in dp[0][n-1]
+    return is_solvable(value, new_operands, operators, new_values)
 
 
-def helper(equation):
+def helper(equation, operators):
     val, operands = equation
-    solvable = is_solvable(val, operands)
+    solvable = is_solvable(val, operands, operators)
     if solvable:
         return val
     return 0
 
 
-def get_solvable_values(equations):
+def get_solvable_values(equations, operators):
     with Pool(processes=os.cpu_count()) as pool:
-        results = pool.map(helper, equations)
+        helper_with_operators = partial(helper, operators=operators)
+        results = pool.map(helper_with_operators, equations)
 
     return results
 
 
-def get_solvable_sum(equations):
-    return sum(get_solvable_values(equations))
+def custom_concat(first, second):
+    return int(concat(str(first), str(second)))
+
+
+def get_solvable_sum(equations, operators):
+    return sum(get_solvable_values(equations, operators))
 
 
 if __name__ == "__main__":
     lines = parse_input("input.txt")
-    print(get_solvable_sum(lines))
+    print(get_solvable_sum(lines, [add, mul]))
+    print(get_solvable_sum(lines, [add, mul, custom_concat]))
