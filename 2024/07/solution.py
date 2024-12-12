@@ -5,8 +5,8 @@ from multiprocessing import Pool
 
 
 def parse_input(filename="./input.txt"):
+    data = []
     with open(filename, "r") as f:
-        data = []
         for line in f.readlines():
             line = line.strip().split(":")
             data.append((int(line[0]), list(map(int, line[1].split()))))
@@ -42,8 +42,8 @@ def helper(equation, operators):
 
 
 def get_solvable_values(equations, operators):
+    helper_with_operators = partial(helper, operators=operators)
     with Pool(processes=os.cpu_count()) as pool:
-        helper_with_operators = partial(helper, operators=operators)
         results = pool.map(helper_with_operators, equations)
 
     return results
